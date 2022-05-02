@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Form2</title>
+	<meta charset="UTF-8" />
+	<script>
+		server = require("./server");
+		callWindow = () =>{
+			nw.Window.open('form1.html', {}, function (win) {
+				win.resizeTo(500, 300);
+				win.moveTo(50, 450);
+			});
+		}
+	</script>
+</head>
+
+<body>
+	<h1 style="color: blueviolet;">It's Server!</h1>
+	<button onclick=callWindow()>Вызвать окно</button>
+</body>
+
+</html>

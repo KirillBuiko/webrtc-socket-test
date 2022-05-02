@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Socket.io example</title>
+</head>
+<body>
+<button id="connect_btn" onclick="connect()">
+	Подключиться
+</button>
+<button id="send_btn" onclick="send()">
+	Отправить сообщение другому пользователю
+</button>
+<textarea id="sendtext" cols="30" rows="10" style="width: 100%">Введите текст для отправки</textarea>
+<textarea readonly id="receive_result" cols="30" rows="10" style="width: 100%">Результат</textarea>
+</body>
+<script>
+	let Client = require("./client");
+	let socket = new Client("http://127.0.0.1:3030");
+	let connectBtn = document.getElementById("connect_btn");
+	let sendBtn = document.getElementById("send_btn");
+	let resultText = document.getElementById("receive_result");
+	let sendText = document.getElementById("sendtext");
+	sendBtn.setAttribute("disabled", "true");
+	const win = nw.Window.get();
+	win.on('close', function(ev) {
+		socket.close();
+		this.close(true);
+	});
+	socket.on("sendcomplete", (message) => {
+		console.log(`Message "${message.slice(0, 10)}..." send complete.`);
+	});
+	socket.on("sendabort", (message, chunkCount) => {
+		console.log(`Message "${message.slice(0, 10)}..." send aborted on ${chunkCount} chunk.`);
+	});
+	socket.on("rtcconnecting", ()=>{
+		console.error("CONNECTING");
+		connectBtn.setAttribute("disabled", "true");
+		sendBtn.removeAttribute("disabled");
+	});
+	socket.on("rtcconnected", ()=>{
+		console.error("CONNECTED");
+		connectBtn.setAttribute("disabled", "true");
+		sendBtn.removeAttribute("disabled");
+	});
+	["rtcfailed", "rtcdisconnected", "rtcclosed"].forEach(event => {
+		socket.on(event, ()=>{
+			connectBtn.removeAttribute("disabled");
+			sendBtn.setAttribute("disabled", "true");
+		})
+	});
+	socket.on("receivecomplete", (messID, buffer) => {
+		console.log(`Received: ${buffer}`);
+		resultText.value = messID + "\n" + buffer;
+	});
+	async function connect() {
+		if(socket.localRTCstatus in ["connecting", "connected"]) return false;
+		if (await socket.startRTCConnection()) {
+			console.log(`RTC Started from ${socket.socketID}`);
+			return true;
+		}
+		else{
+			console.warn(`RTC not started from ${socket.socketID}`);
+			return false;
+		}
+	}
+	async function send() {
+		if (socket.localRTCstatus !== "connected")
+			if(!await connect()) return false;
+		console.log("Send attempt");
+		await socket.sendMessage(sendText.value);
+	}
+</script>
+</html>
